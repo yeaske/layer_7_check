@@ -13,6 +13,14 @@
 		<hr />
 		<h3>Stats</h3>
 		<table class="table">
+{% for itm in data %}
+   <tr>
+        <th> {{ itm.name }} </th>
+        <td> {{ itm.status }} </td>
+   </tr>
+{% endfor %}
+</table>
+		<!--table class="table">
 			<tbody>
 				<tr>
 					<td>DB Name</td>
@@ -25,7 +33,7 @@
 					<td>{{ data.status }}</td>
 				</tr>
 			</tbody>
-		</table>
+		</table-->
 	</div>
 </body>
 </html>

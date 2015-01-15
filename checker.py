@@ -1,55 +1,58 @@
 import os
+import gc
 
 from flask import Flask, request, render_template, jsonify
-from flaskext.mysql import MySQL
+import MySQLdb
 
-# Create a flask app object using a unique name. In this case we are
-# using the name of the current file
 app = Flask(__name__)
-
-# Generate a secret random key for the session
-app.secret_key = os.urandom(24)
+app.config.from_pyfile('app.cfg')
 
 
-def checkDb(xyz):
+def checkDb(dbx):
     """Check DB."""
-    mysql = MySQL()
-    app.config['MYSQL_DATABASE_USER'] = 'sthom02'
-    app.config['MYSQL_DATABASE_PASSWORD'] = 'kmart1234'
-    app.config['MYSQL_DATABASE_DB'] = 'go_service_layer'
-    app.config['MYSQL_DATABASE_HOST'] = 'gomcdn301p.dev.ch3.s.com'
-    mysql.init_app(app)
-    cursor = mysql.connect().cursor()
-    cursor.execute("SELECT * from assoc_details limit 1")
-    data = cursor.fetchall()
-    if data is None:
-        print 111
-#         return "fail"
-    else:
-        print 222
-        print data
-        print 222
-#         return "success"
-    return data
+    db_connect = None
+    try:
+        db_connect = MySQLdb.connect(host=dbx['HOST'], port=dbx['PORT'],
+                                     user=dbx['USER'], passwd=dbx['PASS'],
+                                     db=dbx['DB'])
+        cursor = db_connect.cursor()
+        cursor.execute("show databases")
+        data = cursor.fetchall()
+#         print data
+        if data is None:
+            db_connect.close()
+            return dbx['HOST'], 'FAILURE'
+        else:
+            db_connect.close()
+            return dbx['HOST'], 'OK'
+    except Exception, e:
+        print e
+        return dbx['HOST'], 'EXCEPTION'
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     errors = ''
     if request.method == "GET":
-        # dbname = request.form['name'].strip()
-        name = "Test"
-        status = "Active"
-        b = checkDb("xxx")
-        print b
-        if not errors:
-            data = {'name': name,
-                    'status': status
-                    }
-            return render_template("status.html", data=data)
+        try:
+            databases = app.config['DB_BIND']
+            state_list = []
+            count = 0
+            for database in databases:
+                name, status = checkDb(database)
+                db_state = {}
+                db_state['name'] = name
+                db_state['status'] = status
+                state_list.insert(count, db_state)
+                count = count + 1
+            if not errors:
+                return render_template("status.html", data=state_list)
+        except Exception, e:
+            return render_template("fallback.html", None)
+            print e
 
 
-@app.route('/check/db/<dbname>')
+@app.route('/dbcheck/db/<dbname>')
 def check_db(dbname):
     lst = [
         {'dbname': dbname, 'values': {'a': 66, 'b': 222}},

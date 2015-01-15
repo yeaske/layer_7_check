@@ -5,6 +5,7 @@ __pycache__/
 # Eclipse
 .pydevproject
 .project
+*.cfg
 
 # C extensions
 *.so
